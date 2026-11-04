@@ -61,6 +61,5 @@ export async function GET() {
 
 export async function DELETE() {
   await clearSessionCookie();
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ success: true, message: "Logged out" });
 }
-
