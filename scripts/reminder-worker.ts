@@ -42,3 +42,4 @@ process.on("SIGTERM", () => {
   console.log("Shutting down reminder worker...");
   process.exit(0);
 });
+
