@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getCurrentUser, isPrerenderBailoutError } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { TaskUpdateSchema } from "@/lib/validations";
+import { syncTaskReminder, cancelTaskReminder } from "@/lib/reminderScheduler";
 
 export async function GET(
   req: Request,
@@ -86,6 +87,9 @@ export async function PATCH(
       },
     });
 
+    // Synchronize 1-hour session reminder with new status, date, or time
+    await syncTaskReminder(updatedTask.id);
+
     return NextResponse.json({ task: updatedTask });
   } catch (error) {
     console.error("Update task error:", error);
@@ -108,6 +112,7 @@ export async function DELETE(
 
     if (!existing) return NextResponse.json({ error: "Task not found" }, { status: 404 });
 
+    await cancelTaskReminder(id);
     await db.task.delete({ where: { id } });
 
     return NextResponse.json({ success: true });

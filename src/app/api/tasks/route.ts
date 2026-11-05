@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getCurrentUser, isPrerenderBailoutError } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { TaskCreateSchema } from "@/lib/validations";
+import { syncTaskReminder } from "@/lib/reminderScheduler";
 
 export async function GET(req: Request) {
   try {
@@ -188,6 +189,9 @@ export async function POST(req: Request) {
         details: JSON.stringify({ title: task.title }),
       },
     });
+
+    // Schedule 1-hour study session reminder if due date & time are set
+    await syncTaskReminder(task.id);
 
     return NextResponse.json({ task }, { status: 201 });
   } catch (error) {

@@ -153,14 +153,24 @@ model TaskTag {
 }
 
 model Reminder {
-  id        String   @id @default(cuid())
-  taskId    String
-  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  remindAt  DateTime
-  isSent    Boolean  @default(false)
-  createdAt DateTime @default(now())
+  id          String    @id @default(cuid())
+  taskId      String
+  task        Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId      String?
+  scheduledFor DateTime?
+  remindAt    DateTime
+  status      String    @default("PENDING") // PENDING, PROCESSING, SENT, FAILED, CANCELLED
+  isSent      Boolean   @default(false)
+  sentAt      DateTime?
+  retryCount  Int       @default(0)
+  lastError   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
+  @@index([taskId])
+  @@index([userId, status])
   @@index([remindAt, isSent])
+  @@index([scheduledFor, status])
   @@map("reminders")
 }
 

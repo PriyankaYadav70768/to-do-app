@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { syncTaskReminder } from "@/lib/reminderScheduler";
 
 export async function POST(
   req: Request,
@@ -41,6 +42,9 @@ export async function POST(
         action: isCompleting ? "COMPLETED" : "REOPENED",
       },
     });
+
+    // Synchronize reminder (cancelled if completed, rescheduled if reopened)
+    await syncTaskReminder(updatedTask.id);
 
     return NextResponse.json({ task: updatedTask });
   } catch (error) {
