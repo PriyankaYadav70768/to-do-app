@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { verifyPassword, setSessionCookie, clearSessionCookie, getCurrentUser } from "@/lib/auth";
+import { verifyPassword, setSessionCookie, clearSessionCookie, getCurrentUser, isPrerenderBailoutError } from "@/lib/auth";
 import { LoginSchema } from "@/lib/validations";
 
 export async function POST(req: Request) {
@@ -51,12 +51,20 @@ export async function POST(req: Request) {
   }
 }
 
-export async function GET() {
-  const user = await getCurrentUser();
-  if (!user) {
+export async function GET(req: Request) {
+  try {
+    const user = await getCurrentUser(req);
+    if (!user) {
+      return NextResponse.json({ user: null }, { status: 200 });
+    }
+    return NextResponse.json({ user }, { status: 200 });
+  } catch (error) {
+    if (isPrerenderBailoutError(error)) {
+      throw error;
+    }
+    console.error("Auth status check error:", error);
     return NextResponse.json({ user: null }, { status: 200 });
   }
-  return NextResponse.json({ user }, { status: 200 });
 }
 
 export async function DELETE() {

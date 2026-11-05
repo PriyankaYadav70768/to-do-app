@@ -4,12 +4,39 @@ import { cookies } from "next/headers";
 import { db } from "./db";
 
 const JWT_SECRET = process.env.JWT_SECRET || "fallback-secret-production-grade";
-const COOKIE_NAME = "task_session_token";
+export const COOKIE_NAME = "task_session_token";
 
 export interface SessionUser {
   id: string;
   email: string;
   name: string | null;
+}
+
+export function isPrerenderBailoutError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const digest = (error as { digest?: unknown }).digest;
+  if (typeof digest === "string") {
+    if (
+      digest === "HANGING_PROMISE_REJECTION" ||
+      digest.startsWith("NEXT_") ||
+      digest.startsWith("DYNAMIC_SERVER_USAGE")
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+export function getTokenFromCookieHeader(cookieHeader: string | null | undefined): string | null {
+  if (!cookieHeader) return null;
+  const parts = cookieHeader.split(";");
+  for (const part of parts) {
+    const [rawKey, ...rest] = part.trim().split("=");
+    if (rawKey === COOKIE_NAME) {
+      return decodeURIComponent(rest.join("="));
+    }
+  }
+  return null;
 }
 
 export async function hashPassword(password: string): Promise<string> {
@@ -36,9 +63,24 @@ export function verifyToken(token: string): SessionUser | null {
   }
 }
 
-export async function getCurrentUser(): Promise<SessionUser | null> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(COOKIE_NAME)?.value;
+export async function getCurrentUser(req?: Request): Promise<SessionUser | null> {
+  let token: string | undefined | null;
+
+  if (req) {
+    const cookieHeader = req.headers.get("cookie");
+    token = getTokenFromCookieHeader(cookieHeader);
+  } else {
+    try {
+      const cookieStore = await cookies();
+      token = cookieStore.get(COOKIE_NAME)?.value;
+    } catch (error) {
+      if (isPrerenderBailoutError(error)) {
+        throw error;
+      }
+      return null;
+    }
+  }
+
   if (!token) return null;
 
   const decoded = verifyToken(token);

@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, isPrerenderBailoutError } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { CategoryCreateSchema } from "@/lib/validations";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(req);
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const categories = await db.category.findMany({
@@ -20,6 +20,9 @@ export async function GET() {
 
     return NextResponse.json({ categories });
   } catch (error) {
+    if (isPrerenderBailoutError(error)) {
+      throw error;
+    }
     console.error("Categories GET error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
@@ -27,7 +30,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(req);
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await req.json();

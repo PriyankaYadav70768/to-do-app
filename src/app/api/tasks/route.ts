@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, isPrerenderBailoutError } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { TaskCreateSchema } from "@/lib/validations";
 
 export async function GET(req: Request) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(req);
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -124,6 +124,9 @@ export async function GET(req: Request) {
       },
     });
   } catch (error) {
+    if (isPrerenderBailoutError(error)) {
+      throw error;
+    }
     console.error("Task list error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
@@ -131,7 +134,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(req);
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

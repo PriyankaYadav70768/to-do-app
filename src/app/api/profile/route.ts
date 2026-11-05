@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { getCurrentUser, verifyPassword, hashPassword } from "@/lib/auth";
+import { getCurrentUser, verifyPassword, hashPassword, isPrerenderBailoutError } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { ProfileUpdateSchema, ChangePasswordSchema } from "@/lib/validations";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(req);
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const userProfile = await db.user.findUnique({
@@ -29,6 +29,9 @@ export async function GET() {
 
     return NextResponse.json({ profile: userProfile });
   } catch (error) {
+    if (isPrerenderBailoutError(error)) {
+      throw error;
+    }
     console.error("Profile GET error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
@@ -36,7 +39,7 @@ export async function GET() {
 
 export async function PATCH(req: Request) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(req);
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await req.json();

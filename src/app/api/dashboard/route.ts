@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, isPrerenderBailoutError } from "@/lib/auth";
 import { db } from "@/lib/db";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(req);
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const now = new Date();
@@ -145,6 +145,9 @@ export async function GET() {
       }),
     });
   } catch (error) {
+    if (isPrerenderBailoutError(error)) {
+      throw error;
+    }
     console.error("Dashboard metrics error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

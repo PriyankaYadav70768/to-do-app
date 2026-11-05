@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, isPrerenderBailoutError } from "@/lib/auth";
 import { db } from "@/lib/db";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(req);
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     let prefs = await db.userPreference.findUnique({
@@ -26,6 +26,9 @@ export async function GET() {
 
     return NextResponse.json({ preferences: prefs });
   } catch (error) {
+    if (isPrerenderBailoutError(error)) {
+      throw error;
+    }
     console.error("Preferences GET error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
@@ -33,7 +36,7 @@ export async function GET() {
 
 export async function PATCH(req: Request) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(req);
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await req.json();
