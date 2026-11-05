@@ -13,18 +13,12 @@ export default function HomePage() {
           <span className="font-bold text-base tracking-tight">PulseTask</span>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center">
           <Link
             href="/login"
-            className="text-xs font-semibold text-slate-400 hover:text-white transition-colors"
-          >
-            Sign In
-          </Link>
-          <Link
-            href="/register"
             className="text-xs font-semibold px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg shadow-sm transition-all"
           >
-            Get Started
+            Sign In
           </Link>
         </div>
       </nav>
